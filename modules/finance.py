@@ -263,4 +263,14 @@ def render_finance_dashboard():
                                 ), use_container_width=True, hide_index=True)
                                 
                                 st.markdown("##### 📖 Fund Holdings & Strategy")
-                                for etf, desc in etf_descriptions.items
+                                for etf, desc in etf_descriptions.items():
+                                    with st.expander(f"What is inside {etf}?"):
+                                        st.caption(desc)
+                            else:
+                                st.info("ETF tracking data currently unavailable.")
+                                
+                        except Exception as e:
+                            st.warning(f"Could not load Sector ETF performance: {e}")
+
+            except Exception as e:
+                st.error(f"System Failure: {e}")
