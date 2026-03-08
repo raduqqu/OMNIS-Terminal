@@ -5,6 +5,17 @@ import plotly.graph_objects as go
 import requests
 from datetime import datetime
 
+# ==========================================
+# 🛡️ STEALTH MODE (ANTI-BAN SHIELD)
+# ==========================================
+# Deghizăm traficul ca și cum ar veni de pe un PC cu Google Chrome
+stealth_session = requests.Session()
+stealth_session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9"
+})
+
 # Harta ETF-urilor pe sectoare pentru analiza de corelație macro
 SECTOR_ETFS = {
     "Technology": ["XLK", "QQQ", "SOXX"],
@@ -24,8 +35,8 @@ def get_global_peers(ticker):
     """Trage companiile similare la nivel global folosind API-ul intern de recomandări Yahoo."""
     try:
         url = f"https://query2.finance.yahoo.com/v6/finance/recommendationsbysymbol/{ticker}"
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get(url, headers=headers, timeout=5)
+        # Folosim headerul deghizat
+        res = requests.get(url, headers=stealth_session.headers, timeout=5)
         if res.status_code == 200:
             data = res.json()
             results = data.get('finance', {}).get('result', [])
@@ -50,7 +61,8 @@ def render_finance_dashboard():
     if run_btn:
         with st.spinner(f"Aggregating global intelligence for {ticker}..."):
             try:
-                stock = yf.Ticker(ticker)
+                # 🛡️ Aplicăm sesiunea deghizată la Ticker
+                stock = yf.Ticker(ticker, session=stealth_session)
                 hist = stock.history(period="1y")
                 info = stock.info
                 
@@ -104,7 +116,8 @@ def render_finance_dashboard():
                         valid_peers = []
                         for p in peers:
                             try:
-                                p_info = yf.Ticker(p).info
+                                # 🛡️ Aplicăm sesiunea și la companiile similare
+                                p_info = yf.Ticker(p, session=stealth_session).info
                                 p_mc = p_info.get('marketCap', 0)
                                 if target_mc == 0 or (p_mc > 0 and p_mc <= (target_mc * 1.25)):
                                     price = p_info.get('currentPrice') or p_info.get('previousClose') or 0
@@ -148,9 +161,9 @@ def render_finance_dashboard():
                     st.markdown(f"<h4 class='header-blue'>Global Market Pulse & Risk</h4>", unsafe_allow_html=True)
                     
                     try:
-                        # Tragem indecșii principali + datele macro
                         macro_tickers = ["^GSPC", "^IXIC", "^DJI", "^VIX", "CL=F", "^TNX"]
-                        macro_data = yf.download(macro_tickers, period="5d", progress=False)['Close']
+                        # 🛡️ Aplicăm sesiunea și la descărcarea macro
+                        macro_data = yf.download(macro_tickers, period="5d", progress=False, session=stealth_session)['Close']
                         
                         def get_pct(t):
                             return ((macro_data[t].iloc[-1] - macro_data[t].iloc[-2]) / macro_data[t].iloc[-2]) * 100
@@ -161,7 +174,7 @@ def render_finance_dashboard():
                         r1c2.metric("NASDAQ", f"{macro_data['^IXIC'].iloc[-1]:,.2f}", f"{get_pct('^IXIC'):.2f}%")
                         r1c3.metric("DOW JONES", f"{macro_data['^DJI'].iloc[-1]:,.2f}", f"{get_pct('^DJI'):.2f}%")
                         
-                        st.write("") # Spațiere
+                        st.write("") 
                         
                         # Randul 2: Macro Risk
                         vix_val = macro_data['^VIX'].iloc[-1]
@@ -201,7 +214,8 @@ def render_finance_dashboard():
                     
                     with st.spinner(f"Pulling institutional performance for {', '.join(target_etfs)}..."):
                         try:
-                            etf_data = yf.download(target_etfs, period="1y", progress=False)['Close']
+                            # 🛡️ Aplicăm sesiunea și la descărcarea de ETF-uri
+                            etf_data = yf.download(target_etfs, period="1y", progress=False, session=stealth_session)['Close']
                             etf_results = []
                             etf_descriptions = {}
                             
@@ -217,7 +231,7 @@ def render_finance_dashboard():
                                                 return ((curr - col_data.iloc[-(days_back+1)]) / col_data.iloc[-(days_back+1)]) * 100
                                             else:
                                                 return ((curr - col_data.iloc[0]) / col_data.iloc[0]) * 100
-                                                
+                                        
                                         d1 = get_ret(1)
                                         w1 = get_ret(5)
                                         m1 = get_ret(21)
@@ -225,7 +239,8 @@ def render_finance_dashboard():
                                         m6 = get_ret(126)
                                         m12 = get_ret(252) if L >= 250 else ((curr - col_data.iloc[0]) / col_data.iloc[0]) * 100
                                         
-                                        etf_info = yf.Ticker(etf).info
+                                        # 🛡️ Aplicăm sesiunea la ETF Ticker Info
+                                        etf_info = yf.Ticker(etf, session=stealth_session).info
                                         etf_name = etf_info.get('shortName', etf)[:25]
                                         etf_descriptions[etf] = etf_info.get('longBusinessSummary', 'No description available for this ETF.')
                                         
@@ -248,14 +263,4 @@ def render_finance_dashboard():
                                 ), use_container_width=True, hide_index=True)
                                 
                                 st.markdown("##### 📖 Fund Holdings & Strategy")
-                                for etf, desc in etf_descriptions.items():
-                                    with st.expander(f"What is inside {etf}?"):
-                                        st.caption(desc)
-                            else:
-                                st.info("ETF tracking data currently unavailable.")
-                                
-                        except Exception as e:
-                            st.warning(f"Could not load Sector ETF performance: {e}")
-
-            except Exception as e:
-                st.error(f"System Failure: {e}")
+                                for etf, desc in etf_descriptions.items
