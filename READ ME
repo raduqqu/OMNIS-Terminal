@@ -1,0 +1,27 @@
+# 🌍 OMNIS Terminal | Global Intelligence & OSINT Aggregator
+**A proprietary research tool built for Rodiss Capital.**
+
+OMNIS Terminal is a local-hosted intelligence dashboard that aggregates real-time financial data, geopolitical risk mapping, live satellite tracking, and global SDR radio intercepts into a single, institutional-grade command center.
+
+---
+
+### 🚀 How to Install and Run Locally
+To bypass API rate-limiting (like Yahoo Finance 429 errors) and ensure maximum privacy, this terminal is designed to be executed locally on your own machine.
+
+**Step 1: Download the Source Code**
+* Click the green **`<> Code`** button at the top right of this page.
+* Select **Download ZIP** and extract the folder to your computer.
+
+**Step 2: Install Dependencies**
+Open your computer's Terminal (or Command Prompt) inside the extracted folder and run:
+`pip install -r requirements.txt`
+
+**Step 3: Launch the Terminal**
+Once the installation is complete, start the engine by running:
+`streamlit run app.py`
+
+*The terminal will automatically open in your default web browser at `http://localhost:8501`.*
+
+---
+### ⚖️ Disclaimer
+*Aggregated data is for informational and research purposes only. Not intended as direct trading advice. Rodiss Capital assumes no liability for market actions taken based on this tool.*
